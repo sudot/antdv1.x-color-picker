@@ -112,6 +112,7 @@ export default {
   emits: ['change'],
   data() {
     return {
+      isChanged: false,
       color: new Color({
         enableAlpha: true,
         format: this.colorFormat,
@@ -128,7 +129,7 @@ export default {
   },
   computed: {
     currentColor() {
-      return this.color.value;
+      return this.isChanged ? this.color.value : this.value;
     },
     displayedColor() {
       if (this.selectedFormat == this.colorFormat) {
@@ -141,17 +142,15 @@ export default {
     value: {
       immediate: true,
       handler(newVal) {
-        this.onChanged(newVal);
+        this.color.fromString(newVal);
       },
     },
     colorFormat: {
       immediate: true,
       handler(newVal) {
         this.selectedFormat = newVal;
-        this.color = new Color({
-          enableAlpha: true,
-          format: newVal,
-        });
+        this.color.format = newVal;
+        this.color.doOnChange();
       },
     },
     selectedFormat: {
@@ -182,6 +181,7 @@ export default {
   },
   methods: {
     onChanged(value) {
+      this.isChanged = true;
       this.color.fromString(value);
     },
   },

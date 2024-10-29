@@ -225,7 +225,7 @@ export default {
     return {
       ruleForm: {
         color: '',
-        color2: '',
+        color2: '#FF0000',
       },
       predefineColors: [
         '#FF7875',
@@ -249,6 +249,7 @@ export default {
   methods: {
     onClickSetColor(color) {
       this.ruleForm.color = color;
+      this.ruleForm.color2 = color;
     },
   },
   mounted() {
