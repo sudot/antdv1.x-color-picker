@@ -74,7 +74,7 @@
       allow-clear
       @pressEnter="onChanged($event.target.value)"
       @blur="onChanged($event.target.value)"
-      @change="debounceChanged($event.target.value)"
+      @change="onChanged($event.target.value)"
     >
       <span
         slot="prefix"
@@ -221,13 +221,14 @@ export default {
       });
     },
     onChanged(value) {
-      const tc = tinycolor(value);
-      if (!tc.isValid()) return;
-      this.emitColorValue(tc);
+      if (!value) {
+        this.$emit('change', undefined);
+      } else {
+        const tc = tinycolor(value);
+        if (!tc.isValid()) return;
+        this.emitColorValue(tc);
+      }
     },
-    debounceChanged: debounce(function (value) {
-      this.onChanged(value);
-    }, 500),
     debounceEmitColorValue: debounce(function (tc) {
       this.emitColorValue(tc);
     }, 500),
