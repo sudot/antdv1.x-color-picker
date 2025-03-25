@@ -1,9 +1,7 @@
 <template>
   <div
     class="ant-color-svpanel"
-    :style="{
-      backgroundColor: background,
-    }"
+    :style="{ backgroundColor: `hsl(${hue}, 100%, 50%)` }"
   >
     <div class="ant-color-svpanel__white"></div>
     <div class="ant-color-svpanel__black"></div>
@@ -23,44 +21,38 @@ import draggable from '../lib/draggable';
 export default {
   name: 'SvPanel',
   props: {
-    color: {
-      type: Object,
+    // 色调
+    hue: {
+      type: Number,
+      required: true,
+    },
+    // 饱和度
+    saturation: {
+      type: Number,
+      required: true,
+    },
+    // 明度
+    brightness: {
+      type: Number,
+      required: true,
     },
   },
   data() {
     return {
       panelWidth: 0,
       panelHeight: 0,
-      cursorTop: 0,
-      cursorLeft: 0,
-      background: 'hsl(0, 100%, 50%)',
     };
   },
+  emits: ['change'],
   computed: {
-    colorValue() {
-      const saturation = this.color?.get('saturation');
-      const hue = this.color?.get('hue') || 0;
-      const value = this.color?.get('value');
-      return { saturation, hue, value };
+    cursorTop() {
+      return ((100 - this.brightness) * this.panelHeight) / 100;
     },
-  },
-  watch: {
-    colorValue: {
-      immediate: true,
-      handler() {
-        this.$nextTick(() => {
-          this.update();
-        });
-      },
+    cursorLeft() {
+      return (this.saturation * this.panelWidth) / 100;
     },
   },
   methods: {
-    update() {
-      const { saturation, hue, value } = this.colorValue;
-      this.cursorLeft = (saturation * this.panelWidth) / 100;
-      this.cursorTop = ((100 - value) * this.panelHeight) / 100;
-      this.background = `hsl(${hue}, 100%, 50%)`;
-    },
     handleDrag(event) {
       const rect = this.$el.getBoundingClientRect();
 
@@ -72,12 +64,9 @@ export default {
       top = Math.max(0, top);
       top = Math.min(top, rect.height);
 
-      this.cursorLeft = left;
-      this.cursorTop = top;
-
-      this.color.set({
+      this.$emit('change', {
         saturation: (left / rect.width) * 100,
-        value: 100 - (top / rect.height) * 100,
+        brightness: 100 - (top / rect.height) * 100,
       });
     },
   },

@@ -3,20 +3,38 @@
     v-model="showPicker"
     :placement="placement"
     trigger="click"
+    :overlayStyle="{ width: '312px' }"
     v-bind="$attrs"
-    class="ant-color-picker-popover"
   >
     <template #content>
-      <SvPanel ref="svPanel" :color="color" />
+      <PreDefine
+        v-if="showEasyPanel"
+        @selected="onChanged"
+        @hide="showEasyPanel = false"
+      />
+      <template v-else>
+        <a-icon
+          class="ant-color-picker-back"
+          type="rollback"
+          @click="showEasyPanel = true"
+        />
+        <SvPanel
+          :hue="color.hue"
+          :saturation="color.saturation"
+          :brightness="color.brightness"
+          @change="onSvPanelChanged"
+          @hide="showEasyPanel = true"
+        />
+      </template>
       <div class="ant-color-picker-slider_wrapper">
         <div>
-          <HueSlider ref="hue" class="hue-slider" :color="color" />
-          <AlphaSlider ref="alpha" :color="color" />
+          <HueSlider class="hue-slider" v-model="color.hue" />
+          <AlphaSlider :rgb="rgb" v-model="color.alpha" />
         </div>
         <div class="ant-color-picker__sliders-preview">
           <span
             class="ant-color-picker__sliders-preview-inner"
-            :style="{ 'background-color': currentColor }"
+            :style="{ 'background-color': displayedColor }"
           ></span>
         </div>
       </div>
@@ -29,57 +47,57 @@
         >
           <a-select
             slot="addonBefore"
-            v-model="selectedFormat"
             style="width: 80px"
+            v-model="selectedFormat"
           >
-            <a-select-option
-              :value="format"
-              v-for="format in colorFormats"
-              :key="format"
-            >
+            <a-select-option v-for="format in colorFormats" :key="format">
               {{ format }}
             </a-select-option>
           </a-select>
         </a-input>
       </div>
-      <preDefine
-        v-if="predefine.length"
-        ref="predefine"
-        :colors="predefine"
+      <HistorySelector
+        v-if="historyColors.length"
+        :colors="historyColors"
         @selected="onChanged"
       />
     </template>
     <a-input
-      :value="currentColor"
+      :value="value"
       :size="size"
       allow-clear
       @pressEnter="onChanged($event.target.value)"
       @blur="onChanged($event.target.value)"
-      @change="onChanged($event.target.value)"
+      @change="debounceChanged($event.target.value)"
     >
       <span
         slot="prefix"
         class="ant-color-picker_preview"
-        :style="{ 'background-color': currentColor }"
+        :style="{ 'background-color': value }"
       ></span>
     </a-input>
   </a-popover>
 </template>
 <script>
-import HueSlider from './components/hueSlider.vue';
-import SvPanel from './components/svPanel.vue';
-import AlphaSlider from './components/alphaSlider.vue';
-import preDefine from './components/preDefine.vue';
-import Color from './lib/color';
+import { debounce } from 'lodash';
+import PreDefine from './components/PreDefine.vue';
+import SvPanel from './components/SvPanel.vue';
+import HueSlider from './components/HueSlider.vue';
+import AlphaSlider from './components/AlphaSlider.vue';
+import HistorySelector from './components/HistorySelector.vue';
+import { hsv2rgb, fromString, hsv2String } from './lib/color';
 
+const MAX_STORAGE_LENGTH = 20;
+const HistoryColorKey = 'color-history';
 const colorFormats = ['rgb', 'hex', 'hsl', 'hsv'];
 export default {
   name: 'ColorPicker',
   components: {
-    HueSlider,
+    PreDefine,
     SvPanel,
-    preDefine,
+    HueSlider,
     AlphaSlider,
+    HistorySelector,
   },
   model: {
     prop: 'value',
@@ -89,20 +107,20 @@ export default {
     value: {
       type: String,
     },
+    showAlpha: {
+      type: Boolean,
+      default: true,
+    },
     size: {
       type: String,
       default: 'default',
     },
-    colorFormat: {
+    format: {
       type: String,
       default: 'rgb',
       validator: (val) => {
         return colorFormats.includes(val);
       },
-    },
-    predefine: {
-      type: Array,
-      default: () => [],
     },
     placement: {
       type: String,
@@ -113,84 +131,120 @@ export default {
   data() {
     return {
       isChanged: false,
-      color: new Color({
-        enableAlpha: true,
-        format: this.colorFormat,
-      }),
       showPicker: false,
-      selectedFormat: '',
-      selectedColor: new Color({
-        enableAlpha: true,
-        format: this.colorFormat,
-      }),
+      showEasyPanel: true,
+      color: {
+        hue: 0, // 色调
+        saturation: 0, // 饱和度
+        brightness: 0, // 明度
+        alpha: 100, // 透明度
+      },
 
-      colorFormats: [...colorFormats],
+      selectedFormat: '',
+
+      historyColors: [],
     };
   },
   computed: {
-    currentColor() {
-      return this.isChanged ? this.color.value : this.value;
+    colorFormats() {
+      return colorFormats;
+    },
+    rgb() {
+      return hsv2rgb(
+        this.color.hue,
+        this.color.saturation,
+        this.color.brightness
+      );
+    },
+    colorValue() {
+      return {
+        hue: this.color.hue,
+        saturation: this.color.saturation,
+        brightness: this.color.brightness,
+        alpha: this.color.alpha,
+      };
     },
     displayedColor() {
-      if (this.selectedFormat == this.colorFormat) {
-        return this.currentColor;
-      }
-      return this.selectedColor.fromString(this.currentColor);
+      return hsv2String({
+        ...this.colorValue,
+        format: this.selectedFormat,
+        enableAlpha: this.showAlpha,
+      });
     },
   },
   watch: {
     value: {
       immediate: true,
       handler(newVal) {
-        this.color.fromString(newVal);
+        if (!newVal) return;
+        const color = fromString(newVal);
+        if (!color) return;
+        this.color = color;
       },
     },
-    colorFormat: {
+    format: {
       immediate: true,
       handler(newVal) {
         this.selectedFormat = newVal;
-        this.color.format = newVal;
-        this.color.doOnChange();
       },
     },
-    selectedFormat: {
-      immediate: true,
-      handler(newVal) {
-        this.selectedColor = new Color({
-          enableAlpha: true,
-          format: newVal,
-        });
-      },
-    },
-    currentColor: {
-      handler(newVal) {
-        this.$emit('change', newVal);
-      },
-    },
-    showPicker: {
-      immediate: true,
-      handler(newVal) {
-        if (!newVal) return;
-        this.$nextTick(() => {
-          this.$refs.svPanel?.update();
-          this.$refs.hue?.update();
-          this.$refs.alpha?.update();
-        });
+    colorValue: {
+      handler(color) {
+        this.debounceEmitColorValue(color);
+        if (this.isChanged) return;
+        this.isChanged = true;
       },
     },
   },
   methods: {
-    onChanged(value) {
-      this.isChanged = true;
-      this.color.fromString(value);
+    onSvPanelChanged({ saturation, brightness }) {
+      this.color.saturation = saturation;
+      this.color.brightness = brightness;
     },
+    emitColorValue(color) {
+      const value = hsv2String({
+        ...color,
+        format: this.format,
+        enableAlpha: this.showAlpha,
+      });
+      this.$emit('change', value);
+      this.$nextTick(() => {
+        this.storageHistoryColors();
+      });
+    },
+    onChanged(value) {
+      const color = fromString(value);
+      if (!color) return;
+      this.emitColorValue(color);
+    },
+    debounceChanged: debounce(function (value) {
+      this.onChanged(value);
+    }, 500),
+    debounceEmitColorValue: debounce(function (color) {
+      this.emitColorValue(color);
+    }, 500),
+    storageHistoryColors() {
+      const { r, g, b } = this.rgb;
+      const alpha = this.color.alpha;
+      const value = `rgba(${r}, ${g}, ${b}, ${alpha / 100})`;
+      this.historyColors = [
+        value,
+        ...this.historyColors.filter((v) => v != value),
+      ].slice(0, MAX_STORAGE_LENGTH);
+      localStorage.setItem(HistoryColorKey, JSON.stringify(this.historyColors));
+    },
+  },
+  mounted() {
+    this.historyColors = JSON.parse(
+      localStorage.getItem(HistoryColorKey) || '[]'
+    ).slice(0, MAX_STORAGE_LENGTH);
   },
 };
 </script>
 <style scoped>
-.ant-color-picker-popover {
-  display: flex;
-  align-items: center;
+.ant-color-picker-back {
+  padding: 10px;
+  margin: -10px 0 0 -10px;
 }
 .ant-color-picker-slider_wrapper {
   display: flex;

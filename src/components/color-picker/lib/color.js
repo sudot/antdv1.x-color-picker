@@ -139,64 +139,29 @@ const hsv2rgb = function (h, s, v) {
   };
 };
 
-function Color(options) {
-  this._hue = 0;
-  this._saturation = 0;
-  this._value = 100;
-  this._alpha = 100;
-  this.enableAlpha = false;
-  this.format = 'hex';
-  this.value = '';
-
-  options = options || {};
-  this.enableAlpha = options.enableAlpha || false;
-  this.format = (options.format || 'hex').toLowerCase();
-}
-Color.prototype.set = function (prop, value) {
-  if (arguments.length === 1 && typeof prop === 'object') {
-    for (const p in prop) {
-      if (Object.hasOwn(prop, p)) {
-        this.set(p, prop[p]);
-      }
-    }
-
-    return;
-  }
-
-  this[`_${prop}`] = value;
-  this.doOnChange();
-};
-
-Color.prototype.get = function (prop) {
-  if (prop === 'alpha') {
-    return Math.floor(this[`_${prop}`]);
-  }
-  return this[`_${prop}`];
-};
-
-Color.prototype.toRgb = function () {
-  return hsv2rgb(this._hue, this._saturation, this._value);
-};
-
-Color.prototype.fromString = function (value) {
-  if (!value) {
-    this._hue = 0;
-    this._saturation = 0;
-    this._value = 100;
-    this._alpha = 100;
-    this.value = '';
-    return this.value;
-  }
+/**
+ * 将颜色字符串转换为可计算的数值
+ * @param {String} value 颜色字符串
+ * @returns {Object} {hue, saturation, brightness, alpha}
+ *          hue: 色调
+ *          saturation: 饱和度
+ *          brightness: 明度
+ *          alpha: 透明度
+ */
+const fromString = function (value) {
+  let alpha = 100;
+  value = (value || '').trim();
 
   const fromHSV = (h, s, v) => {
-    this._hue = parseInt(Math.max(0, Math.min(360, h)));
-    this._saturation = Math.max(0, Math.min(100, s));
-    this._value = Math.max(0, Math.min(100, v));
-
-    this.doOnChange();
+    return {
+      hue: parseInt(Math.max(0, Math.min(360, h))), // 色调
+      saturation: Math.max(0, Math.min(100, s)), // 饱和度
+      brightness: Math.max(0, Math.min(100, v)), // 明度
+      alpha: alpha, // 透明度
+    };
   };
 
-  if (value.indexOf('hsl') !== -1) {
+  if (value.indexOf('hsl') === 0) {
     const parts = value
       .replace(/hsla|hsl|\(|\)/gm, '')
       .split(/\s|,/g)
@@ -204,15 +169,15 @@ Color.prototype.fromString = function (value) {
       .map((val, index) => (index > 2 ? parseFloat(val) : parseInt(val, 10)));
 
     if (parts.length === 4) {
-      this._alpha = parseFloat(parts[3]) * 100;
+      alpha = parseFloat(parts[3]) * 100;
     } else if (parts.length === 3) {
-      this._alpha = 100;
+      alpha = 100;
     }
     if (parts.length >= 3) {
       const { h, s, v } = hsl2hsv(parts[0], parts[1], parts[2]);
-      fromHSV(h, s, v);
+      return fromHSV(h, s, v);
     }
-  } else if (value.indexOf('hsv') !== -1) {
+  } else if (value.indexOf('hsv') === 0) {
     const parts = value
       .replace(/hsva|hsv|\(|\)/gm, '')
       .split(/\s|,/g)
@@ -220,14 +185,14 @@ Color.prototype.fromString = function (value) {
       .map((val, index) => (index > 2 ? parseFloat(val) : parseInt(val, 10)));
 
     if (parts.length === 4) {
-      this._alpha = parseFloat(parts[3]) * 100;
+      alpha = parseFloat(parts[3]) * 100;
     } else if (parts.length === 3) {
-      this._alpha = 100;
+      alpha = 100;
     }
     if (parts.length >= 3) {
-      fromHSV(parts[0], parts[1], parts[2]);
+      return fromHSV(parts[0], parts[1], parts[2]);
     }
-  } else if (value.indexOf('rgb') !== -1) {
+  } else if (value.indexOf('rgb') === 0) {
     const parts = value
       .replace(/rgba|rgb|\(|\)/gm, '')
       .split(/\s|,/g)
@@ -235,15 +200,15 @@ Color.prototype.fromString = function (value) {
       .map((val, index) => (index > 2 ? parseFloat(val) : parseInt(val, 10)));
 
     if (parts.length === 4) {
-      this._alpha = parseFloat(parts[3]) * 100;
+      alpha = parseFloat(parts[3]) * 100;
     } else if (parts.length === 3) {
-      this._alpha = 100;
+      alpha = 100;
     }
     if (parts.length >= 3) {
       const { h, s, v } = rgb2hsv(parts[0], parts[1], parts[2]);
-      fromHSV(h, s, v);
+      return fromHSV(h, s, v);
     }
-  } else if (value.indexOf('#') !== -1) {
+  } else if (value.indexOf('#') === 0) {
     const hex = value.replace('#', '').trim();
     if (!/^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$|^[0-9a-fA-F]{8}$/.test(hex)) return;
     let r, g, b;
@@ -259,80 +224,86 @@ Color.prototype.fromString = function (value) {
     }
 
     if (hex.length === 8) {
-      this._alpha = (parseHexChannel(hex.substring(6)) / 255) * 100;
+      alpha = (parseHexChannel(hex.substring(6)) / 255) * 100;
     } else if (hex.length === 3 || hex.length === 6) {
-      this._alpha = 100;
+      alpha = 100;
     }
 
     const { h, s, v } = rgb2hsv(r, g, b);
-    fromHSV(h, s, v);
+    return fromHSV(h, s, v);
   }
-  return this.value;
+  return {
+    hue: 0, // 色调
+    saturation: 0, // 饱和度
+    brightness: 0, // 明度
+    alpha: 100, // 透明度
+  };
 };
 
-Color.prototype.compare = function (color) {
-  return (
-    Math.abs(color._hue - this._hue) < 2 &&
-    Math.abs(color._saturation - this._saturation) < 1 &&
-    Math.abs(color._value - this._value) < 1 &&
-    Math.abs(color._alpha - this._alpha) < 1
-  );
-};
-
-Color.prototype.doOnChange = function () {
-  const { _hue, _saturation, _value, _alpha, format } = this;
-
-  if (this.enableAlpha) {
+/**
+ * 将颜色字符串转换为可计算的数值
+ * @param {Object} {hue, saturation, brightness, alpha, format, enableAlpha}
+ *          hue: 色调
+ *          saturation: 饱和度
+ *          brightness: 明度
+ *          alpha: 透明度
+ *          format: 输出格式化类型
+ *          enableAlpha: 是否启用透明度
+ * @returns {String} value 颜色字符串
+ */
+const hsv2String = function ({
+  hue,
+  saturation,
+  brightness,
+  alpha,
+  format,
+  enableAlpha,
+}) {
+  if (enableAlpha) {
     switch (format) {
       case 'hsl': {
-        const hsl = hsv2hsl(_hue, _saturation / 100, _value / 100);
-        this.value = `hsla(${_hue}, ${Math.round(hsl[1] * 100)}%, ${Math.round(
+        const hsl = hsv2hsl(hue, saturation / 100, brightness / 100);
+        return `hsla(${hue}, ${Math.round(hsl[1] * 100)}%, ${Math.round(
           hsl[2] * 100
-        )}%, ${this.get('alpha') / 100})`;
-        break;
+        )}%, ${alpha / 100})`;
       }
       case 'hsv': {
-        this.value = `hsva(${_hue}, ${Math.round(_saturation)}%, ${Math.round(
-          _value
-        )}%, ${this.get('alpha') / 100})`;
-        break;
+        return `hsva(${hue}, ${Math.round(saturation)}%, ${Math.round(
+          brightness
+        )}%, ${alpha / 100})`;
       }
       case 'hex': {
-        this.value = `${toHex(hsv2rgb(_hue, _saturation, _value))}${hexOne(
-          (_alpha * 255) / 100
+        return `${toHex(hsv2rgb(hue, saturation, brightness))}${hexOne(
+          (alpha * 255) / 100
         )}`;
-        break;
       }
       default: {
-        const { r, g, b } = hsv2rgb(_hue, _saturation, _value);
-        this.value = `rgba(${r}, ${g}, ${b}, ${this.get('alpha') / 100})`;
+        const { r, g, b } = hsv2rgb(hue, saturation, brightness);
+        return `rgba(${r}, ${g}, ${b}, ${alpha / 100})`;
       }
     }
   } else {
     switch (format) {
       case 'hsl': {
-        const hsl = hsv2hsl(_hue, _saturation / 100, _value / 100);
-        this.value = `hsl(${_hue}, ${Math.round(hsl[1] * 100)}%, ${Math.round(
+        const hsl = hsv2hsl(hue, saturation / 100, brightness / 100);
+        return `hsl(${hue}, ${Math.round(hsl[1] * 100)}%, ${Math.round(
           hsl[2] * 100
         )}%)`;
-        break;
       }
       case 'hsv': {
-        this.value = `hsv(${_hue}, ${Math.round(_saturation)}%, ${Math.round(
-          _value
+        return `hsv(${hue}, ${Math.round(saturation)}%, ${Math.round(
+          brightness
         )}%)`;
-        break;
       }
       case 'rgb': {
-        const { r, g, b } = hsv2rgb(_hue, _saturation, _value);
-        this.value = `rgb(${r}, ${g}, ${b})`;
-        break;
+        const { r, g, b } = hsv2rgb(hue, saturation, brightness);
+        return `rgb(${r}, ${g}, ${b})`;
       }
       default: {
-        this.value = toHex(hsv2rgb(_hue, _saturation, _value));
+        return toHex(hsv2rgb(hue, saturation, brightness));
       }
     }
   }
 };
 
-export default Color;
+export { hsv2rgb, fromString, hsv2String };

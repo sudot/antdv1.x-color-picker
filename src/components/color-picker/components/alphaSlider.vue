@@ -4,9 +4,7 @@
       <div
         ref="bar"
         class="ant-color-alpha-slider__bar"
-        :style="{
-          background,
-        }"
+        :style="{ background }"
         @click="handleClick"
       ></div>
     </div>
@@ -23,32 +21,35 @@ import draggable from '../lib/draggable';
 
 export default {
   name: 'AlphaSlider',
+  model: { prop: 'alpha', event: 'change' },
   props: {
-    color: {
+    alpha: {
+      type: Number,
+      required: true,
+    },
+    rgb: {
+      /* {r,g,b} */
       type: Object,
+      required: true,
     },
   },
   data() {
     return {
-      thumbLeft: 0,
       sliderWidth: 0,
       thumbWidth: 0,
-      background: null,
     };
   },
+  emits: ['change'],
   computed: {
-    alphaValue() {
-      return { alpha: this.color?.get('alpha'), value: this.color?.value };
+    thumbLeft() {
+      return Math.round(
+        (this.alpha * (this.sliderWidth - this.thumbWidth / 2)) / 100
+      );
     },
-  },
-  watch: {
-    alphaValue: {
-      immediate: true,
-      handler() {
-        this.$nextTick(() => {
-          this.update();
-        });
-      },
+    background() {
+      const { r, g, b } = this.rgb;
+      if (isNaN(r) || isNaN(g) || isNaN(b)) return null;
+      return `linear-gradient(to right, rgba(${r}, ${g}, ${b}, 0) 0%, rgba(${r}, ${g}, ${b}, 1) 100%)`;
     },
   },
   methods: {
@@ -70,24 +71,7 @@ export default {
         ((left - this.thumbWidth / 2) / (rect.width - this.thumbWidth)) * 100
       );
 
-      this.color.set('alpha', alpha);
-    },
-    getThumbLeft() {
-      const alpha = this.color?.get('alpha');
-      return Math.round(
-        (alpha * (this.sliderWidth - this.thumbWidth / 2)) / 100
-      );
-    },
-    getBackground() {
-      if (this.color && this.color.value) {
-        const { r, g, b } = this.color.toRgb();
-        return `linear-gradient(to right, rgba(${r}, ${g}, ${b}, 0) 0%, rgba(${r}, ${g}, ${b}, 1) 100%)`;
-      }
-      return null;
-    },
-    update() {
-      this.thumbLeft = this.getThumbLeft();
-      this.background = this.getBackground();
+      this.$emit('change', alpha);
     },
   },
   mounted() {

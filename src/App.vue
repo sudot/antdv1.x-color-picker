@@ -48,11 +48,25 @@
                 v-model="ruleForm.color"
                 show-alpha
                 placement="bottomLeft"
-                :predefine="predefineColors"
               />
             </a-col>
             <a-col :span="12" :style="{ color: ruleForm.color }">
               回显：{{ ruleForm.color }}
+            </a-col>
+          </a-row>
+        </a-form-model-item>
+        <a-form-model-item label="Color1">
+          <a-row :gutter="[8, 8]">
+            <a-col :span="12">
+              <color-picker
+                v-model="ruleForm.color1"
+                show-alpha
+                format="hex"
+                placement="bottomLeft"
+              />
+            </a-col>
+            <a-col :span="12" :style="{ color: ruleForm.color1 }">
+              回显：{{ ruleForm.color1 }}
             </a-col>
           </a-row>
         </a-form-model-item>
@@ -62,9 +76,8 @@
               <color-picker
                 v-model="ruleForm.color2"
                 show-alpha
-                colorFormat="hex"
+                format="hsl"
                 placement="bottomLeft"
-                :predefine="predefineColors"
               />
             </a-col>
             <a-col :span="12" :style="{ color: ruleForm.color2 }">
@@ -225,30 +238,15 @@ export default {
     return {
       ruleForm: {
         color: '',
+        color1: undefined,
         color2: '#FF0000',
       },
-      predefineColors: [
-        '#FF7875',
-        '#FF9C6E',
-        '#FFC069',
-        '#FFD666',
-        '#FFF566',
-        '#D3F261',
-        '#95DE64',
-        '#5CDBD3',
-        '#69C0FF',
-        '#85A5FF',
-        '#B37FEB',
-        '#FF85C0',
-        '#000000',
-        '#FFFFFF',
-        '#FFFFFF00',
-      ],
     };
   },
   methods: {
     onClickSetColor(color) {
       this.ruleForm.color = color;
+      this.ruleForm.color1 = color;
       this.ruleForm.color2 = color;
     },
   },

@@ -14,32 +14,26 @@ import draggable from '../lib/draggable';
 
 export default {
   name: 'HueSlider',
+  model: { prop: 'hue', event: 'change' },
   props: {
-    color: {
-      type: Object,
+    hue: {
+      type: Number,
       required: true,
     },
   },
   data() {
     return {
-      thumbLeft: 0,
       sliderWidth: 0,
       thumbWidth: 0,
     };
   },
+  emits: ['change'],
   computed: {
-    hueValue() {
-      return this.color?.get('hue');
-    },
-  },
-  watch: {
-    hueValue: {
-      immediate: true,
-      handler() {
-        this.$nextTick(() => {
-          this.update();
-        });
-      },
+    thumbLeft() {
+      const hue = this.hue;
+      const sliderWidth = this.sliderWidth;
+      const thumbWidth = this.thumbWidth;
+      return Math.round((hue * (sliderWidth - thumbWidth / 2)) / 360);
     },
   },
   methods: {
@@ -57,16 +51,7 @@ export default {
       const hue = Math.round(
         ((left - this.thumbWidth / 2) / (rect.width - this.thumbWidth)) * 360
       );
-      this.color.set('hue', hue);
-    },
-    getThumbLeft() {
-      const sliderWidth = this.sliderWidth || this.$el.clientWidth;
-      const thumbWidth = this.thumbWidth || this.$refs.thumb.offsetWidth;
-      const hue = this.color.get('hue');
-      return Math.round((hue * (sliderWidth - thumbWidth / 2)) / 360);
-    },
-    update() {
-      this.thumbLeft = this.getThumbLeft();
+      this.$emit('change', hue);
     },
   },
   mounted() {
