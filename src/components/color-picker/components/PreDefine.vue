@@ -115,7 +115,7 @@ export default {
       if ('advance' === color) {
         return this.$emit('hide');
       }
-      this.$emit('selected', 'transparent' === color ? null : color);
+      this.$emit('selected', color);
     },
   },
 };

@@ -13,11 +13,13 @@
         @hide="showEasyPanel = false"
       />
       <template v-else>
-        <a-icon
+        <a-button
           class="ant-color-picker-back"
-          type="rollback"
+          size="small"
           @click="showEasyPanel = true"
-        />
+        >
+          返回
+        </a-button>
         <SvPanel
           :hue="color.hue"
           :saturation="color.saturation"
@@ -28,19 +30,23 @@
       </template>
       <div class="ant-color-picker-slider_wrapper">
         <div>
-          <HueSlider class="hue-slider" v-model="color.hue" />
+          <HueSlider
+            class="hue-slider"
+            v-model="color.hue"
+            v-if="!showEasyPanel"
+          />
           <AlphaSlider :rgb="rgb" v-model="color.alpha" />
         </div>
         <div class="ant-color-picker__sliders-preview">
           <span
             class="ant-color-picker__sliders-preview-inner"
-            :style="{ 'background-color': displayedColor }"
+            :style="{ 'background-color': rgbString }"
           ></span>
         </div>
       </div>
       <div class="ant-color-dropdown__btns">
         <a-input
-          :value="displayedColor"
+          :value="selectedFormatColor"
           :size="size"
           @pressEnter="onChanged($event.target.value)"
           @blur="onChanged($event.target.value)"
@@ -73,7 +79,7 @@
       <span
         slot="prefix"
         class="ant-color-picker_preview"
-        :style="{ 'background-color': value }"
+        :style="{ 'background-color': rgbString }"
       ></span>
     </a-input>
   </a-popover>
@@ -85,8 +91,8 @@ import SvPanel from './components/SvPanel.vue';
 import HueSlider from './components/HueSlider.vue';
 import AlphaSlider from './components/AlphaSlider.vue';
 import HistorySelector from './components/HistorySelector.vue';
-import { hsv2rgb, fromString, hsv2String } from './lib/color';
-
+import tinycolor from './lib/tinycolor.js';
+window.tinycolor = tinycolor;
 const MAX_STORAGE_LENGTH = 20;
 const HistoryColorKey = 'color-history';
 const colorFormats = ['rgb', 'hex', 'hsl', 'hsv'];
@@ -137,7 +143,7 @@ export default {
         hue: 0, // 色调
         saturation: 0, // 饱和度
         brightness: 0, // 明度
-        alpha: 100, // 透明度
+        alpha: 0, // 透明度
       },
 
       selectedFormat: '',
@@ -149,27 +155,25 @@ export default {
     colorFormats() {
       return colorFormats;
     },
-    rgb() {
-      return hsv2rgb(
-        this.color.hue,
-        this.color.saturation,
-        this.color.brightness
-      );
-    },
     colorValue() {
       return {
-        hue: this.color.hue,
-        saturation: this.color.saturation,
-        brightness: this.color.brightness,
-        alpha: this.color.alpha,
+        h: this.color.hue,
+        s: this.color.saturation / 100,
+        v: this.color.brightness / 100,
+        a: this.color.alpha / 100,
       };
     },
-    displayedColor() {
-      return hsv2String({
-        ...this.colorValue,
-        format: this.selectedFormat,
-        enableAlpha: this.showAlpha,
-      });
+    tcColor() {
+      return tinycolor(this.colorValue);
+    },
+    rgb() {
+      return this.tcColor.toRgb();
+    },
+    rgbString() {
+      return this.tcColor.toRgbString();
+    },
+    selectedFormatColor() {
+      return this.tcColor.toString(this.selectedFormat);
     },
   },
   watch: {
@@ -177,9 +181,18 @@ export default {
       immediate: true,
       handler(newVal) {
         if (!newVal) return;
-        const color = fromString(newVal);
-        if (!color) return;
-        this.color = color;
+        const tc = tinycolor(newVal);
+        if (!tc.isValid()) return;
+        const { h, s, v, a } = tc.toHsv();
+        this.color = {
+          hue: h,
+          // 乘 10000 再除 100 是为了保留精度，避免出现逆向转换后和正向转换的结果不一致
+          // 例如 #fcc02e 转为 hsv 之后再转为 hex 则会变成 #fcc02d
+          // 增加精度之后就不会发生这样的情况了
+          saturation: Math.round(s * 10000) / 100,
+          brightness: Math.round(v * 10000) / 100,
+          alpha: Math.round(a * 10000) / 100,
+        };
       },
     },
     format: {
@@ -189,8 +202,8 @@ export default {
       },
     },
     colorValue: {
-      handler(color) {
-        this.debounceEmitColorValue(color);
+      handler() {
+        this.debounceEmitColorValue(this.tcColor);
         if (this.isChanged) return;
         this.isChanged = true;
       },
@@ -201,32 +214,25 @@ export default {
       this.color.saturation = saturation;
       this.color.brightness = brightness;
     },
-    emitColorValue(color) {
-      const value = hsv2String({
-        ...color,
-        format: this.format,
-        enableAlpha: this.showAlpha,
-      });
-      this.$emit('change', value);
+    emitColorValue(tc) {
+      this.$emit('change', tc.toString(this.format));
       this.$nextTick(() => {
         this.storageHistoryColors();
       });
     },
     onChanged(value) {
-      const color = fromString(value);
-      if (!color) return;
-      this.emitColorValue(color);
+      const tc = tinycolor(value);
+      if (!tc.isValid()) return;
+      this.emitColorValue(tc);
     },
     debounceChanged: debounce(function (value) {
       this.onChanged(value);
     }, 500),
-    debounceEmitColorValue: debounce(function (color) {
-      this.emitColorValue(color);
+    debounceEmitColorValue: debounce(function (tc) {
+      this.emitColorValue(tc);
     }, 500),
     storageHistoryColors() {
-      const { r, g, b } = this.rgb;
-      const alpha = this.color.alpha;
-      const value = `rgba(${r}, ${g}, ${b}, ${alpha / 100})`;
+      const value = this.rgbString;
       this.historyColors = [
         value,
         ...this.historyColors.filter((v) => v != value),
@@ -243,13 +249,12 @@ export default {
 </script>
 <style scoped>
 .ant-color-picker-back {
-  padding: 10px;
-  margin: -10px 0 0 -10px;
+  margin-bottom: 10px;
 }
 .ant-color-picker-slider_wrapper {
   display: flex;
   align-items: center;
-  margin-top: 8px;
+  margin: 12px 0;
 }
 .ant-color-picker-slider_wrapper > div:first-child {
   flex: 1;

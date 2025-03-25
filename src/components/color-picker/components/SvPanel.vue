@@ -16,7 +16,7 @@
 </template>
 
 <script>
-import draggable from '../lib/draggable';
+import draggable from '../lib/draggable.js';
 
 export default {
   name: 'SvPanel',

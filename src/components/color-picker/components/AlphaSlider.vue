@@ -17,7 +17,7 @@
 </template>
 
 <script>
-import draggable from '../lib/draggable';
+import draggable from '../lib/draggable.js';
 
 export default {
   name: 'AlphaSlider',
@@ -96,7 +96,6 @@ export default {
   box-sizing: border-box;
   position: relative;
   height: 12px;
-  margin: 8px 0;
 }
 .ant-color-picker__slider-padding {
   border-radius: 12px;

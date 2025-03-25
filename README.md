@@ -20,6 +20,7 @@ ant-design-vue 的 UI 框架中，并没有 colorPicker 颜色选择器。找了
 - 从原 vue3 版本的 ant-design-vue@2.x 降级为 vue2 版本的 ant-design-vue@1.x。
 - 从 ts 转为 js。
 - 调整选择器面板布局。
+- `color-format` 修改为 `format`。
 - 移除了透明度属性 `show-alpha`，保持为一直开启透明度。
 - 移除了颜色滑动条和透明度条可自定义位置的属性，固定并不可配置，调整需要改源码。
 - 添加了未支持的 `placement` 属性。
@@ -65,7 +66,7 @@ npm run serve
 | ------------- | ----------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------- | ----------- |
 | value/v-model | 绑定值                  | string | —                                                                                                                             | —           |
 | size          | 尺寸                    | string | large/default/small                                                                                                           | default     |
-| color-format  | 写入 v-model 的颜色格式 | string | hsl/hsv/hex/rgb                                                                                                               | rgb         |
+| format        | 写入 v-model 的颜色格式 | string | hsl/hsv/hex/rgb                                                                                                               | rgb         |
 | predefine     | 预定义颜色              | array  | —                                                                                                                             | —           |
 | placement     | 颜色选择器弹出位置      | string | `top` `left` `right` `bottom` `topLeft` `topRight` `bottomLeft` `bottomRight` `leftTop` `leftBottom` `rightTop` `rightBottom` | bottomRight |
 

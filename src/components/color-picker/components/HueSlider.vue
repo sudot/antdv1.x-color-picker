@@ -10,7 +10,7 @@
 </template>
 
 <script>
-import draggable from '../lib/draggable';
+import draggable from '../lib/draggable.js';
 
 export default {
   name: 'HueSlider',
@@ -77,7 +77,6 @@ export default {
   box-sizing: border-box;
   position: relative;
   height: 12px;
-  margin-top: 8px;
   margin-bottom: 12px;
 }
 .ant-color-hue-slider__bar {
