@@ -143,7 +143,7 @@ export default {
         hue: 0, // 色调
         saturation: 0, // 饱和度
         brightness: 0, // 明度
-        alpha: 0, // 透明度
+        alpha: 100, // 透明度
       },
 
       selectedFormat: '',
@@ -170,9 +170,11 @@ export default {
       return this.tcColor.toRgb();
     },
     rgbString() {
+      if (!this.isChanged) return this.value;
       return this.tcColor.toRgbString();
     },
     selectedFormatColor() {
+      if (!this.isChanged) return this.value;
       return this.tcColor.toString(this.selectedFormat);
     },
   },
@@ -180,6 +182,7 @@ export default {
     value: {
       immediate: true,
       handler(newVal) {
+        this.isChanged = false;
         if (!newVal) return;
         const tc = tinycolor(newVal);
         if (!tc.isValid()) return;
