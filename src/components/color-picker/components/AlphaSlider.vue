@@ -36,15 +36,12 @@ export default {
   data() {
     return {
       sliderWidth: 0,
-      thumbWidth: 0,
     };
   },
   emits: ['change'],
   computed: {
     thumbLeft() {
-      return Math.round(
-        (this.alpha * (this.sliderWidth - this.thumbWidth / 2)) / 100
-      );
+      return this.alpha * this.sliderWidth;
     },
     background() {
       const { r, g, b } = this.rgb;
@@ -54,22 +51,16 @@ export default {
   },
   methods: {
     handleClick(event) {
-      const target = event.target;
-
-      if (target !== this.$refs.thumb) {
+      if (event.target !== this.$refs.thumb) {
         this.handleDrag(event);
       }
     },
     handleDrag(event) {
       const rect = this.$el.getBoundingClientRect();
 
-      let left = event.clientX - rect.left;
-      left = Math.max(this.thumbWidth / 2, left);
-      left = Math.min(left, rect.width - this.thumbWidth / 2);
-
-      const alpha = Math.round(
-        ((left - this.thumbWidth / 2) / (rect.width - this.thumbWidth)) * 100
-      );
+      let offset = Math.max(0, event.clientX - rect.left);
+      offset = Math.min(offset, this.sliderWidth);
+      const alpha = offset / this.sliderWidth;
 
       this.$emit('change', alpha);
     },
@@ -86,8 +77,8 @@ export default {
 
     draggable(this.$refs.bar, dragConfig);
     draggable(this.$refs.thumb, dragConfig);
-    this.sliderWidth = this.$el.clientWidth;
-    this.thumbWidth = this.$refs.thumb.offsetWidth;
+
+    this.sliderWidth = this.$el.clientWidth - this.$refs.thumb.offsetWidth / 2;
   },
 };
 </script>

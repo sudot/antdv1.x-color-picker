@@ -46,27 +46,25 @@ export default {
   emits: ['change'],
   computed: {
     cursorTop() {
-      return ((100 - this.brightness) * this.panelHeight) / 100;
+      return (1 - this.brightness) * this.panelHeight;
     },
     cursorLeft() {
-      return (this.saturation * this.panelWidth) / 100;
+      return this.saturation * this.panelWidth;
     },
   },
   methods: {
     handleDrag(event) {
       const rect = this.$el.getBoundingClientRect();
 
-      let left = event.clientX - rect.left;
-      let top = event.clientY - rect.top;
+      let left = Math.max(0, event.clientX - rect.left);
+      let top = Math.max(0, event.clientY - rect.top);
 
-      left = Math.max(0, left);
-      left = Math.min(left, rect.width);
-      top = Math.max(0, top);
-      top = Math.min(top, rect.height);
+      left = Math.min(left, this.panelWidth);
+      top = Math.min(top, this.panelHeight);
 
       this.$emit('change', {
-        saturation: (left / rect.width) * 100,
-        brightness: 100 - (top / rect.height) * 100,
+        saturation: left / this.panelWidth,
+        brightness: 1 - top / this.panelHeight,
       });
     },
   },

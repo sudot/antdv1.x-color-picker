@@ -92,7 +92,6 @@ import HueSlider from './components/HueSlider.vue';
 import AlphaSlider from './components/AlphaSlider.vue';
 import HistorySelector from './components/HistorySelector.vue';
 import tinycolor from './lib/tinycolor.js';
-window.tinycolor = tinycolor;
 const MAX_STORAGE_LENGTH = 20;
 const HistoryColorKey = 'color-history';
 const colorFormats = ['rgb', 'hex', 'hsl', 'hsv'];
@@ -112,10 +111,6 @@ export default {
   props: {
     value: {
       type: String,
-    },
-    showAlpha: {
-      type: Boolean,
-      default: true,
     },
     size: {
       type: String,
@@ -143,7 +138,7 @@ export default {
         hue: 0, // 色调
         saturation: 0, // 饱和度
         brightness: 0, // 明度
-        alpha: 100, // 透明度
+        alpha: 1, // 透明度
       },
 
       selectedFormat: '',
@@ -155,16 +150,13 @@ export default {
     colorFormats() {
       return colorFormats;
     },
-    colorValue() {
-      return {
-        h: this.color.hue,
-        s: this.color.saturation / 100,
-        v: this.color.brightness / 100,
-        a: this.color.alpha / 100,
-      };
-    },
     tcColor() {
-      return tinycolor(this.colorValue);
+      return tinycolor({
+        h: this.color.hue,
+        s: this.color.saturation,
+        v: this.color.brightness,
+        a: this.color.alpha,
+      });
     },
     rgb() {
       return this.tcColor.toRgb();
@@ -179,6 +171,12 @@ export default {
     },
   },
   watch: {
+    format: {
+      immediate: true,
+      handler(newVal) {
+        this.selectedFormat = newVal;
+      },
+    },
     value: {
       immediate: true,
       handler(newVal) {
@@ -188,23 +186,14 @@ export default {
         if (!tc.isValid()) return;
         const { h, s, v, a } = tc.toHsv();
         this.color = {
-          hue: h,
-          // 乘 10000 再除 100 是为了保留精度，避免出现逆向转换后和正向转换的结果不一致
-          // 例如 #fcc02e 转为 hsv 之后再转为 hex 则会变成 #fcc02d
-          // 增加精度之后就不会发生这样的情况了
-          saturation: Math.round(s * 10000) / 100,
-          brightness: Math.round(v * 10000) / 100,
-          alpha: Math.round(a * 10000) / 100,
+          hue: h || this.color.hue, // 防止纯黑白的时候hue滑动块突然就跑到最左边了
+          saturation: s || this.color.saturation, // 防止纯黑白的时候SvPanel滑动块突然就跑到最左下角了
+          brightness: v,
+          alpha: a,
         };
       },
     },
-    format: {
-      immediate: true,
-      handler(newVal) {
-        this.selectedFormat = newVal;
-      },
-    },
-    colorValue: {
+    tcColor: {
       handler() {
         this.debounceEmitColorValue(this.tcColor);
         if (this.isChanged) return;
@@ -217,12 +206,6 @@ export default {
       this.color.saturation = saturation;
       this.color.brightness = brightness;
     },
-    emitColorValue(tc) {
-      this.$emit('change', tc.toString(this.format));
-      this.$nextTick(() => {
-        this.storageHistoryColors();
-      });
-    },
     onChanged(value) {
       if (!value) {
         this.$emit('change', undefined);
@@ -231,6 +214,12 @@ export default {
         if (!tc.isValid()) return;
         this.emitColorValue(tc);
       }
+    },
+    emitColorValue(tc) {
+      this.$emit('change', tc.toString(this.format));
+      this.$nextTick(() => {
+        this.storageHistoryColors();
+      });
     },
     debounceEmitColorValue: debounce(function (tc) {
       this.emitColorValue(tc);

@@ -11,9 +11,9 @@ ant-design-vue 的 UI 框架中，并没有 colorPicker 颜色选择器。找了
 
 [可以点击这里实时预览](https://sudot.net/antdv1.x-color-picker/)
 
-| react 版 Antd 颜色选择器预览  | 本项目颜色选择器预览          |
-| ----------------------------- | ----------------------------- |
-| ![antd-react](antd-react.png) | ![效果展示](color-picker.png) |
+| react 版 Antd 颜色选择器预览  | 本项目颜色选择器预览             |                                  |
+| ----------------------------- | -------------------------------- | -------------------------------- |
+| ![antd-react](antd-react.png) | ![效果展示](color-picker-01.png) | ![效果展示](color-picker-02.png) |
 
 ## 修改记录
 
@@ -26,6 +26,9 @@ ant-design-vue 的 UI 框架中，并没有 colorPicker 颜色选择器。找了
 - 添加了未支持的 `placement` 属性。
 - 添加了面板中切换 `color-format` 功能。
 - 添加了选择器外部输入框，并优化了外部和内部输入框的独立逻辑。
+- 参考 [https://github.com/aesoper101/vue3-colorpicker](https://github.com/aesoper101/vue3-colorpicker) 的 fk 样式选择器将预定义颜色更换为快捷颜色选择面板
+- 使用 [https://github.com/bgrins/TinyColor](https://github.com/bgrins/TinyColor) 代替并移除原代码中的 `color.js`。
+- 添加历史选择颜色记录。
 
 ## 本地开发和运行
 
@@ -65,7 +68,7 @@ npm run serve
 | 参数          | 说明                    | 类型   | 可选值                                                                                                                        | 默认值      |
 | ------------- | ----------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------- | ----------- |
 | value/v-model | 绑定值                  | string | —                                                                                                                             | —           |
-| size          | 尺寸                    | string | large/default/small                                                                                                           | default     |
+| size          | 输入框尺寸              | string | large/default/small                                                                                                           | default     |
 | format        | 写入 v-model 的颜色格式 | string | hsl/hsv/hex/rgb                                                                                                               | rgb         |
 | predefine     | 预定义颜色              | array  | —                                                                                                                             | —           |
 | placement     | 颜色选择器弹出位置      | string | `top` `left` `right` `bottom` `topLeft` `topRight` `bottomLeft` `bottomRight` `leftTop` `leftBottom` `rightTop` `rightBottom` | bottomRight |

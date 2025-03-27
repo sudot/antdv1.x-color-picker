@@ -24,16 +24,12 @@ export default {
   data() {
     return {
       sliderWidth: 0,
-      thumbWidth: 0,
     };
   },
   emits: ['change'],
   computed: {
     thumbLeft() {
-      const hue = this.hue;
-      const sliderWidth = this.sliderWidth;
-      const thumbWidth = this.thumbWidth;
-      return Math.round((hue * (sliderWidth - thumbWidth / 2)) / 360);
+      return Math.round((this.hue * this.sliderWidth) / 360);
     },
   },
   methods: {
@@ -44,13 +40,11 @@ export default {
     },
     handleDrag(event) {
       const rect = this.$el.getBoundingClientRect();
-      let left = event.clientX - rect.left;
-      left = Math.min(left, rect.width - this.thumbWidth / 2);
-      left = Math.max(this.thumbWidth / 2, left);
 
-      const hue = Math.round(
-        ((left - this.thumbWidth / 2) / (rect.width - this.thumbWidth)) * 360
-      );
+      let offset = Math.max(0, event.clientX - rect.left);
+      offset = Math.min(offset, this.sliderWidth);
+      const hue = (offset / this.sliderWidth) * 360;
+
       this.$emit('change', hue);
     },
   },
@@ -66,8 +60,7 @@ export default {
 
     draggable(this.$refs.bar, dragConfig);
     draggable(this.$refs.thumb, dragConfig);
-    this.sliderWidth = this.$el.clientWidth;
-    this.thumbWidth = this.$refs.thumb.offsetWidth;
+    this.sliderWidth = this.$el.clientWidth - this.$refs.thumb.offsetWidth / 2;
   },
 };
 </script>
