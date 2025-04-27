@@ -186,8 +186,13 @@ export default {
         if (!tc.isValid()) return;
         const { h, s, v, a } = tc.toHsv();
         this.color = {
-          hue: h || this.color.hue, // 防止纯黑白的时候hue滑动块突然就跑到最左边了
-          saturation: s || this.color.saturation, // 防止纯黑白的时候SvPanel滑动块突然就跑到最左下角了
+          /*
+          // hue: h || this.color.hue, // 防止纯黑白的时候hue滑动块突然就跑到最左边了
+          // saturation: s || this.color.saturation, // 防止纯黑白的时候SvPanel滑动块突然就跑到最左下角了
+          添加如上两个数据处理后，先选绿色 rgb(6, 234, 67)，再选红色 rgb(234, 6, 6)，选择器又会变成绿色导致无法选择成功
+          */
+          hue: h,
+          saturation: s,
           brightness: v,
           alpha: a,
         };
