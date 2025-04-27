@@ -5,6 +5,7 @@
     trigger="click"
     :overlayStyle="{ width: '312px' }"
     v-bind="$attrs"
+    @visibleChange="onVisibleChange"
   >
     <template #content>
       <PreDefine
@@ -73,7 +74,6 @@
       :size="size"
       allow-clear
       @pressEnter="onChanged($event.target.value)"
-      @blur="onChanged($event.target.value)"
       @change="onChanged($event.target.value)"
     >
       <span
@@ -207,6 +207,12 @@ export default {
     },
   },
   methods: {
+    onVisibleChange(visible) {
+      if (!visible) return;
+      this.historyColors = JSON.parse(
+        localStorage.getItem(HistoryColorKey) || '[]'
+      ).slice(0, MAX_STORAGE_LENGTH);
+    },
     onSvPanelChanged({ saturation, brightness }) {
       this.color.saturation = saturation;
       this.color.brightness = brightness;
@@ -237,11 +243,6 @@ export default {
       ].slice(0, MAX_STORAGE_LENGTH);
       localStorage.setItem(HistoryColorKey, JSON.stringify(this.historyColors));
     },
-  },
-  mounted() {
-    this.historyColors = JSON.parse(
-      localStorage.getItem(HistoryColorKey) || '[]'
-    ).slice(0, MAX_STORAGE_LENGTH);
   },
 };
 </script>
